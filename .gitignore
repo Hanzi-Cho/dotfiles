@@ -1,0 +1,10 @@
+*.bak
+
+# Never commit real secrets. The live copy belongs at ~/.dotfiles.secrets.sh,
+# outside this repo — these patterns are a second line of defence.
+secrets.sh
+.secrets.sh
+*.secrets.sh
+*.pem
+*.key
+.credentials.json
