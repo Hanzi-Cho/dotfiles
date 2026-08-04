@@ -1,5 +1,9 @@
 # dotfiles — Claude Code 슬래시 커맨드까지 동기화하는 dotfiles
 
+> **반복되고 구조가 정해진 업무를 Claude Code 슬래시 커맨드로 표준화해 실수를 줄이고, 배운 것이 세션과 함께 휘발되지 않게 남깁니다 — 체크리스트와 게이트를 지키며 새 커맨드를 찍어내는 커맨드까지.**
+>
+> **Turn repetitive, well-structured work into Claude Code slash commands: fewer mistakes, one standard way, knowledge that outlives the session — plus a command that generates new commands under strict checklists and gates.**
+
 WSL2 + tmux + React Native / Android 환경의 셸 설정과, **Claude Code 커스텀 슬래시
 커맨드**를 한 저장소에서 관리합니다. 새 기기를 세팅할 때 `.zshrc`뿐 아니라
 `/commit`, `/summarize` 같은 슬래시 커맨드까지 한 번에 따라옵니다.
