@@ -1,8 +1,18 @@
 ---
-description: git diff를 원자적 커밋 단위로 분리해 Conventional Commits 메시지만 출력
-argument-hint: "[프로젝트 경로 또는 이름 (생략 시 자동 판별)]"
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git branch:*), Bash(git ls-files:*), Bash(git -C:*), Bash(ls:*), Bash(find:*), AskUserQuestion
+description: git diff를 원자적 커밋 단위로 분리해 Conventional Commits 메시지 추천 (옵션으로 커밋·푸시까지)
+argument-hint: "[--suggest|--commit|--push] [프로젝트 경로 또는 이름]"
+allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git branch:*), Bash(git ls-files:*), Bash(git config:*), Bash(git add:*), Bash(git commit:*), Bash(git -C:*), Bash(ls:*), Bash(find:*), AskUserQuestion
 ---
+
+<!--
+allowed-tools 주의: 이 커맨드는 모든 git 명령을 `git -C <REPO> ...` 형태로 실행하므로
+`Bash(git -C:*)`가 필요하다. 그런데 Bash 권한 패턴은 접두사 매칭이라 "git -C <경로> 중
+안전한 서브커맨드만"을 표현할 수가 없다. 즉 `Bash(git -C:*)`는 `git -C <경로> push`나
+`reset`까지 함께 허용한다.
+
+따라서 이 커맨드의 안전장치는 allowed-tools가 아니라 **아래 CONFIG의 MODE와 맨 끝
+"금지 사항" 섹션**이다. suggest 모드의 읽기 전용 보장은 프롬프트 수준의 규칙이다.
+-->
 
 # /commit — 원자적 커밋 메시지 추천
 
@@ -10,14 +20,44 @@ allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git r
 
 ---
 
-## 0단계. 대상 저장소 결정 (먼저 수행)
+## CONFIG (유지보수 지점 — 기본 동작을 바꾸려면 여기만 고친다)
+
+```
+MODE = suggest    # suggest | commit | push
+```
+
+- `suggest` — 메시지만 추천한다. 저장소를 건드리지 않는다. **기본값**
+- `commit`  — 추천한 단위대로 스테이징하고 커밋까지 한다. 푸시는 안 한다.
+- `push`    — 커밋한 뒤 푸시까지 한다.
+
+## 모드 오버라이드 (CONFIG를 고치지 않고 이번 실행만 바꾼다)
+
+| 플래그 | 별칭 | 동작 |
+|---|---|---|
+| `--suggest` | `-s`, `--dry-run` | 메시지만 출력 |
+| `--commit` | `-c` | 커밋까지 |
+| `--push` | `-p` | 커밋 + 푸시 |
+
+플래그가 있으면 항상 `CONFIG.MODE`를 이긴다. 플래그가 없으면 `CONFIG.MODE`를 쓴다.
+플래그가 2개 이상 주어지면 **가장 안전한 것**(suggest > commit > push)을 택하고 그 사실을 한 줄로 알린다.
+
+---
+
+## 0단계. 인자 파싱 및 모드 결정 (먼저 수행)
+
+`$ARGUMENTS`에서 위 표의 플래그를 먼저 걷어낸다. **남은 문자열**이 저장소 경로/이름 인자다.
+플래그가 아닌 `-`로 시작하는 토큰이 있으면 중단하고 알 수 없는 옵션이라고 알린다.
+
+결정된 모드는 최종 출력 직전까지 **입 밖에 내지 않는다**. 모드 안내 문구로 출력을 늘리지 않는다.
+
+## 1단계. 대상 저장소 결정
 
 아래 순서로 대상 저장소 `<REPO>`를 정한다. **정해지기 전에는 diff를 읽지 않는다.**
 
-1. `$ARGUMENTS`가 있으면 그것을 경로 또는 저장소 이름으로 보고 해석한다.
+1. 경로/이름 인자가 있으면 그것을 경로 또는 저장소 이름으로 보고 해석한다.
    이름만 주어졌으면 현재 디렉터리 하위에서 매칭되는 저장소를 찾는다.
 2. 인자가 없으면 현재 디렉터리에서 `git rev-parse --show-toplevel`을 실행한다.
-   성공하면 그 경로가 `<REPO>`다. → 3단계로 간다.
+   성공하면 그 경로가 `<REPO>`다. → 2단계로 간다.
 3. 실패하면(= 홈 경로·워크스페이스 루트 등 저장소 밖) **즉시 `AskUserQuestion`으로 물어본다.**
    - 후보 수집: `find . -maxdepth 3 -name .git -type d` 로 저장소를 찾고,
      각각 `git -C <경로> status --porcelain` 으로 **변경사항이 있는 것만** 남긴다.
@@ -29,9 +69,9 @@ allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git r
 
 이후 모든 git 명령은 `git -C <REPO> ...` 형태로 실행한다.
 
-## 1단계. 변경사항 수집
+## 2단계. 변경사항 수집
 
-`<REPO>` 기준으로 아래를 읽는다. **읽기 전용 명령만 쓴다.**
+`<REPO>` 기준으로 아래를 읽는다. **이 단계는 모드와 무관하게 읽기 전용이다.**
 
 - `git -C <REPO> status --porcelain=v1` — 스테이징/미스테이징/untracked 전체 목록
 - `git -C <REPO> diff` — 스테이징 안 된 변경
@@ -42,7 +82,7 @@ allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git r
 
 diff가 크면 `--stat`으로 먼저 전체 지형을 잡고, 관심사 분리에 필요한 파일만 본문을 읽는다.
 
-## 2단계. 원자적 단위로 분리
+## 3단계. 원자적 단위로 분리
 
 - 한 커밋은 **하나의 관심사(concern)만** 담는다. "기능 A 수정"과 "문서 정리"는 다른 커밋이다.
 - 파일이 아니라 **변경의 의도**로 나눈다. 한 파일이 두 관심사에 걸치면
@@ -50,13 +90,14 @@ diff가 크면 `--stat`으로 먼저 전체 지형을 잡고, 관심사 분리�
 - 신규 모듈과 그것을 쓰는 수정이 함께 있으면, 중간 커밋이 깨지지 않는 순서로 배열한다.
 - 커밋 순서는 논리적 순서(기반 → 사용, 기능 → 문서)를 따른다.
 
-## 3단계. 출력
+## 4단계. 출력
 
 ### 출력 규칙 (엄격히 준수)
 
 - **커밋 메시지 외의 텍스트를 절대 출력하지 마라.** "분석하겠습니다", "추천해드릴게요",
   요약 설명, 마무리 멘트, 다음 단계 안내 전부 금지.
-  - 유일한 예외 2가지: 0단계의 저장소 선택 질문, 후보가 없을 때의 `변경사항 없음` 한 줄.
+  - 예외: 1단계의 저장소 선택 질문, 후보가 없을 때의 `변경사항 없음` 한 줄,
+    그리고 `commit`/`push` 모드에서 5단계 이후에 규정된 게이트·보고.
 - 각 커밋 블록은 아래 포맷을 **정확히** 따른다.
 
 ```
@@ -106,9 +147,92 @@ fix(monitoring): 모니터링 명세 정합성 및 카드 렌더링 정리
 - CountView 카드 렌더링 로직 정리
 ```
 
+**`MODE = suggest`면 여기서 종료한다.** 5단계 이후로 넘어가지 않는다.
+
+---
+
+# 이하는 `commit` / `push` 모드에서만 수행한다
+
+## 5단계. 사전 점검 게이트
+
+아래 4가지를 확인하고, **하나라도 걸리면 커밋하지 않고 중단**한다. 자동으로 고치지 않는다.
+
+1. **인덱스가 비어 있는지** — `git -C <REPO> diff --staged --name-only`가 비어있지 않으면
+   이미 스테이징된 변경이 첫 커밋에 섞여 들어간다. 중단하고 그 파일 목록을 보여준다.
+   **`git reset`을 사용자 지시 없이 실행하지 마라.**
+2. **아이덴티티** — `git -C <REPO> config --get user.name` / `user.email` / `git branch --show-current`.
+   `user.email`이 비어 있으면 중단한다. repo-local에 고정돼 있지 않아 global에서
+   흘러들어온 값이라면 그 사실을 **명시**한다(회사/개인 메일이 잘못 박히는 사고가 흔하다).
+3. **`(일부 hunk)` 블록** — 파일 단위로 나눌 수 없으므로 자동 커밋 대상에서 **제외**한다.
+   나머지 블록만 진행하고, 제외한 블록은 사용자가 `git add -p`로 직접 스테이징하도록 안내한다.
+4. **커밋할 블록이 0개** — `변경사항 없음` 한 줄 출력하고 종료.
+
+통과하면 아래 형식으로 승인을 받는다. **yes 이전에는 아무것도 스테이징하지 않는다.**
+
+```
+아이덴티티  <name> / <email> / <branch>   <repo-local 아님이면: (global에서 상속)>
+
+커밋 예정 N개:
+  1) type(scope): 요약        ← 파일1, 파일2
+  2) type(scope): 요약        ← 파일3
+<제외된 블록이 있으면: 제외  type(scope): 요약  — (일부 hunk), 직접 스테이징 필요>
+
+<push 모드면 한 줄 추가: 푸시 대상  <branch> → <upstream 또는 "upstream 없음">>
+
+이대로 진행할까요? (yes / 수정요청)
+```
+
+## 6단계. 커밋 실행
+
+승인받은 블록을 **3단계에서 정한 순서대로** 하나씩 처리한다.
+
+1. `git -C <REPO> add -- <그 블록의 파일들만>`
+2. `git -C <REPO> commit -m "<메시지>"` — 본문이 여러 줄이면 `-m` 을 반복하지 말고
+   heredoc(`-F -`)으로 넘겨 줄바꿈을 보존한다.
+3. 다음 블록으로 넘어간다.
+
+규칙:
+- **`git add .` / `git add -A` 금지.** 위에 나열한 경로만 스테이징한다. 무관한 변경을 끌어들이지 않기 위함.
+- `git commit -a` 금지. `--amend` 금지. 기존 커밋을 고치지 않는다.
+- 한 블록에서 실패하면 **거기서 멈춘다.** 이미 만든 커밋은 되돌리지 않고,
+  몇 번째까지 성공했는지 보고한다. 실패를 무시하고 다음 블록으로 넘어가지 마라.
+
+**`MODE = commit`이면 7단계를 건너뛰고 8단계로 간다.**
+
+## 7단계. 푸시 (`MODE = push`만)
+
+1. `git -C <REPO> branch --show-current`로 현재 브랜치를 확인한다.
+2. upstream 확인: `git -C <REPO> rev-parse --abbrev-ref --symbolic-full-name @{u}`.
+   - 있으면 `git -C <REPO> push`
+   - 없으면 **중단하고 물어본다.** `-u`로 새 upstream을 만들지는 사용자가 결정한다.
+3. 기본 브랜치(`main`/`master`)에 직접 푸시하는 상황이면, 진행 전에 그 사실을 한 줄로 경고한다.
+
+규칙:
+- **`--force` / `--force-with-lease` 금지.**
+- 푸시 실패 시 재시도하지 마라. **에러 원문을 그대로 보여주고 멈춘다.**
+- non-fast-forward로 거절당하면 **자동으로 pull하지 마라.** 사용자에게 판단을 넘긴다.
+  (`pull.rebase=true` 설정에서 rebase로 당기면 머지 커밋이 조용히 사라진다.)
+- **원격 URL을 출력하지 마라.** `https://<user>:<token>@github.com/...` 형태로 origin에
+  PAT가 평문으로 박혀 있는 경우가 흔하다. `git remote -v`를 그대로 찍지 말 것.
+
+## 8단계. 보고
+
+```
+커밋  <sha7> type(scope): 요약
+      <sha7> type(scope): 요약
+푸시  <branch> → <upstream> 완료 | 안 함 | 실패(<이유 한 줄>)
+제외  type(scope): 요약  — (일부 hunk), 직접 스테이징 필요
+```
+
+수행하지 않은 단계는 **"안 함"으로 정직하게 적는다.** 푸시가 실패했으면 성공으로 적지 않는다.
+
+---
+
 ## 금지 사항
 
-- **실제로 스테이징하거나 커밋하지 마라. 제안만 출력한다.**
-- `git add` / `git commit` / `git reset` / `git checkout` / `git stash` / `git push` 등
-  저장소 상태를 바꾸는 명령을 실행하지 마라. 이 명령은 **읽기 전용**이다.
-- 파일을 편집하지 마라.
+- `MODE = suggest`(기본)에서는 **저장소 상태를 바꾸는 명령을 절대 실행하지 마라.**
+  `git add` / `git commit` / `git push` / `git reset` / `git checkout` / `git stash` 전부 금지.
+  제안만 출력한다.
+- 모드와 무관하게 항상 금지: `git reset`, `git checkout`, `git stash`, `git rebase`,
+  `git commit --amend`, `git push --force`, 파일 편집.
+- 게이트(1단계 저장소 질문, 5단계 승인)를 통과하기 전에 앞서 나가지 마라.
