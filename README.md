@@ -55,27 +55,154 @@ curl -fsSL https://raw.githubusercontent.com/Hanzi-Cho/dotfiles/main/.claude/com
 
 ### /commit
 
-`git diff`를 **원자적 커밋 단위로 쪼개** Conventional Commits 메시지만 출력합니다.
-읽기 전용 — 실제로 스테이징하거나 커밋하지 않습니다.
+`git diff`를 **원자적 커밋 단위로 쪼개** Conventional Commits 메시지를 추천합니다.
+기본은 추천만 하고 저장소를 건드리지 않으며, 플래그로 커밋·푸시까지 맡길 수 있습니다.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Hanzi-Cho/dotfiles/main/.claude/commands/commit.md -o ~/.claude/commands/commit.md
 ```
 
+| 사용법 | 동작 |
+|---|---|
+| `/commit` | **메시지만 추천** (기본값). 읽기 전용 |
+| `/commit --commit` | 추천한 단위대로 스테이징 + 커밋 |
+| `/commit --push` | 커밋 후 푸시까지 |
+
+기본 동작을 아예 바꾸려면 파일 안 `CONFIG` 블록의 `MODE`를 `suggest` → `commit`
+또는 `push`로 고치면 됩니다. 플래그는 항상 `CONFIG`를 이깁니다.
+
+커밋·푸시 전에는 **아이덴티티(`user.name`/`user.email`/브랜치)와 커밋 목록을 보여주고
+승인을 받는 게이트**를 지납니다. `git add .`, `--amend`, `--force`, 자동 `pull`은 하지 않습니다.
+
 ### /summarize
 
-현재 세션을 **TIL Daily(STAR) 문서에 병합**하고, 기술 학습은 `knowledge/`로 승격한 뒤
-승인을 받아 커밋·푸시까지 합니다.
+지금 Claude Code 세션에서 **무슨 작업을 했는지 정리해 학습 기록 저장소에 남기고**,
+그중 기술 원리에 해당하는 것은 개념 문서로 승격한 뒤 승인을 받아 커밋·푸시까지 합니다.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Hanzi-Cho/dotfiles/main/.claude/commands/summarize.md -o ~/.claude/commands/summarize.md
 ```
 
-> ⚠️ `/summarize`는 쓰기 전에 **CONFIG 블록의 `TIL_ROOT`, `GIT_USER_NAME`,
-> `GIT_USER_EMAIL`을 본인 값으로 고쳐야** 합니다. 기본값(`$HOME/til`)이 없으면
-> 커맨드가 중단됩니다.
+> ⚠️ 이 커맨드는 **별도의 학습 기록 저장소(TIL 저장소)가 미리 있어야** 동작합니다.
+> 파일 안 `CONFIG` 블록의 `TIL_ROOT`, `GIT_USER_NAME`, `GIT_USER_EMAIL`을 본인 값으로
+> 고치세요. 경로가 없으면 커맨드는 추측하지 않고 그냥 중단합니다.
+> 저장소가 아직 없다면 → [학습 기록 저장소(TIL) 만들기](#-학습-기록-저장소til-만들기)
 
 디렉터리가 없다면 먼저 `mkdir -p ~/.claude/commands`를 실행하세요.
+
+---
+
+## 📚 학습 기록 저장소(TIL) 만들기
+
+`/summarize`가 쓰는 저장소입니다. 처음 보는 용어부터 정리합니다.
+
+### 용어
+
+| 용어 | 뜻 |
+|---|---|
+| **TIL** | *Today I Learned*. 오늘 배운 것을 그날 바로 적어두는 습관·그 기록을 말합니다 |
+| **Daily** | 날짜별 작업 일지. `2026-08-04.md`처럼 하루에 한 파일 |
+| **knowledge** | 날짜와 무관한 **개념 정리** 문서. 나중에 다시 찾아 읽는 대상 |
+| **chapter** | knowledge 안의 분류 단위(챕터·도메인). 예: `git/`, `react-native/`, `linux/` |
+| **STAR** | Daily를 쓸 때 쓰는 4단 서술 틀 — 아래 참조 |
+
+### 왜 dotfiles와 저장소를 나누나
+
+성격이 다릅니다. dotfiles는 **설정**이라 공개해도 되고 남이 그대로 써도 됩니다.
+학습 기록은 **내용**이라 업무 맥락·회사 정보가 섞이기 쉽습니다. 그래서 학습 기록은
+별도의 **비공개 저장소**로 두고, dotfiles에는 그걸 다루는 커맨드만 둡니다.
+
+### 핵심 구조 — 흐름(Daily)과 축적(knowledge)을 분리
+
+이게 이 구조의 유일한 아이디어입니다.
+
+- **`daily/`** — 시간순으로 계속 쌓이는 흐름. *"그날 무슨 일이 있었나"*. 다시 안 읽어도 됩니다
+- **`knowledge/`** — 개념 단위로 **덮어쓰며 자라는** 축적. *"이 기술은 어떻게 동작하나"*. 반복해서 읽습니다
+
+같은 걸 두 번 적는 게 아닙니다. Daily에 `"WSL에서 adb가 기기를 못 찾아서 2시간 씀"`을 적고,
+knowledge에는 `"WSL은 별도 네트워크 네임스페이스라 USB 장치를 직접 못 본다"`는 **원리만**
+남깁니다. 그래서 knowledge 문서는 개념당 한 개고, 같은 개념을 또 배우면 그 파일에 **덧붙입니다**.
+
+### 추천 저장소 구조
+
+```
+til/
+├── daily/                          # 흐름 — 날짜별 작업 일지
+│   ├── 2026-08-03.md
+│   └── 2026-08-04.md
+├── knowledge/                      # 축적 — 챕터별 개념 정리
+│   ├── git/
+│   │   ├── rebase-vs-merge.md
+│   │   └── filter-repo-caveats.md
+│   ├── react-native/
+│   │   └── new-architecture.md
+│   └── linux/
+│       └── wsl-usb-passthrough.md
+├── TIL_GUIDELINES.md               # 작성 규칙 (Daily는 STAR, knowledge는 원리 중심)
+└── star                            # 오늘자 Daily 템플릿 생성 스크립트
+```
+
+챕터는 **미리 다 만들지 마세요.** 문서가 생길 때 필요한 것만 만듭니다.
+빈 폴더가 많으면 어디에 넣어야 할지 매번 고민하게 됩니다.
+
+### Daily에 쓰는 STAR 틀
+
+하루 일지를 `"이것저것 함"`으로 끝내지 않게 하는 장치입니다.
+
+| 항목 | 무엇을 적나 |
+|---|---|
+| **S**ituation | 어떤 상황·맥락이었나 |
+| **T**ask | 무엇을 하려고 했나 |
+| **A**ction | 실제로 어떻게 했나 (막힌 지점, 후보안, 고른 이유) |
+| **R**esult | 결과와 배운 점 |
+
+이 순서가 유용한 이유는 **A(막힌 지점과 고른 이유)가 강제로 남기** 때문입니다.
+나중에 "왜 이렇게 했지"를 되짚을 때 실제로 쓰이는 건 결과가 아니라 이 부분입니다.
+이력서·면접에서 경험을 설명할 때 쓰는 틀과 같습니다.
+
+### 만들기 (복붙 가능)
+
+```bash
+mkdir -p ~/til/daily ~/til/knowledge
+cd ~/til && git init -b main
+
+# 오늘자 Daily 템플릿 생성기
+cat > star <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+d="$(date +%F)"
+f="$(dirname "$0")/daily/$d.md"
+[ -f "$f" ] && { echo "already exists: $f"; exit 0; }
+mkdir -p "$(dirname "$f")"
+cat > "$f" <<EOF
+# $d
+
+## Situation & Task
+1. 어떤 기능/실험을 하다가 무엇을 하려 했는지
+
+## Action
+- 막힌 지점과 그때 고른 방법, 버린 방법
+
+## Result
+- 결과와 배운 점
+
+## 지식 문서 수정 기록
+
+| 문서 | 신규/갱신 | 요지 |
+|---|---|---|
+| knowledge/챕터/파일명.md | 신규 | |
+EOF
+echo "created: $f"
+SH
+chmod +x star
+```
+
+만든 뒤 `/summarize`의 `CONFIG`에서 `TIL_ROOT = $HOME/til`로 맞추면 연결됩니다.
+비공개로 둘 거라면 GitHub에서 **private** 저장소로 만들어 remote를 붙이세요.
+
+> `TIL_GUIDELINES.md`는 본인 규칙을 적는 파일입니다. `/summarize`가 knowledge 문서를
+> 쓸 때 이 파일의 규칙을 참고하므로, 최소한 *"원리 중심으로, 코드 예제와 예외 케이스를
+> 포함해서 쓴다"* 정도는 적어두는 편이 좋습니다.
 
 ---
 
