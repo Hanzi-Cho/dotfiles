@@ -61,7 +61,7 @@ SRC_CMDS="$DOTFILES_DIR/.claude/commands"
 DST_CMDS="$HOME/.claude/commands"
 
 if [ -d "$SRC_CMDS" ]; then
-  info "installing slash commands -> $DST_CMDS ($LINK_MODE)"
+  info "installing Claude Code slash commands -> $DST_CMDS ($LINK_MODE)"
   run mkdir -p "$DST_CMDS"
   for src in "$SRC_CMDS"/*.md; do
     [ -e "$src" ] || continue
@@ -79,14 +79,38 @@ if [ -d "$SRC_CMDS" ]; then
     else
       run cp -f "$src" "$dst"
     fi
-    echo "    /${name%.md}"
+    echo "    Claude: /${name%.md}"
   done
 else
-  warn "no .claude/commands directory found — skipping commands"
+  warn "no .claude/commands directory found — skipping Claude commands"
+fi
+
+# ---------------------------------------------------------------------------
+# Antigravity (AGY) custom skills
+# ---------------------------------------------------------------------------
+SRC_SKILLS="$DOTFILES_DIR/.agents/skills"
+DST_SKILLS="$HOME/.gemini/config/skills"
+
+if [ -d "$SRC_SKILLS" ]; then
+  info "installing Antigravity skills -> $DST_SKILLS ($LINK_MODE)"
+  run mkdir -p "$DST_SKILLS"
+  for skill_dir in "$SRC_SKILLS"/*; do
+    [ -d "$skill_dir" ] || continue
+    skill_name="$(basename "$skill_dir")"
+    dst_skill_dir="$DST_SKILLS/$skill_name"
+
+    if [ "$LINK_MODE" = "symlink" ]; then
+      run ln -sfn "$skill_dir" "$dst_skill_dir"
+    else
+      run mkdir -p "$dst_skill_dir"
+      run cp -rf "$skill_dir"/* "$dst_skill_dir"/
+    fi
+    echo "    Antigravity: /$skill_name"
+  done
 fi
 
 if [ "$COMMANDS_ONLY" = "1" ]; then
-  info "done. Slash commands are picked up by new Claude Code sessions."
+  info "done. Slash commands and skills are picked up by new Claude Code and Antigravity sessions."
   exit 0
 fi
 

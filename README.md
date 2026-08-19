@@ -1,24 +1,22 @@
-# dotfiles — Claude Code 슬래시 커맨드까지 동기화하는 dotfiles
+# dotfiles — Claude Code & Antigravity 커스텀 스킬·커맨드를 동기화하는 dotfiles
 
-> **반복되고 구조가 정해진 업무를 Claude Code 슬래시 커맨드로 표준화해 실수를 줄이고, 배운 것이 세션과 함께 휘발되지 않게 남깁니다 — 체크리스트와 게이트를 지키며 새 커맨드를 찍어내는 커맨드까지.**
+> **반복되고 구조가 정해진 업무를 Claude Code 슬래시 커맨드 및 Antigravity(AGY) 스킬로 표준화해 실수를 줄이고, 배운 것이 세션과 함께 휘발되지 않게 남깁니다 — 체크리스트와 게이트를 지키며 새 커맨드를 찍어내는 커맨드까지.**
 >
-> **Turn repetitive, well-structured work into Claude Code slash commands: fewer mistakes, one standard way, knowledge that outlives the session — plus a command that generates new commands under strict checklists and gates.**
+> **Turn repetitive, well-structured work into Claude Code slash commands & Antigravity skills: fewer mistakes, one standard way, knowledge that outlives the session.**
 
-WSL2 + tmux + React Native / Android 환경의 셸 설정과, **Claude Code 커스텀 슬래시
-커맨드**를 한 저장소에서 관리합니다. 새 기기를 세팅할 때 `.zshrc`뿐 아니라
-`/commit`, `/summarize` 같은 슬래시 커맨드까지 한 번에 따라옵니다.
+WSL2 + tmux + React Native / Android 환경의 셸 설정과, **Claude Code 및 Antigravity 커스텀 슬래시 커맨드/스킬**을 한 저장소에서 관리합니다. 새 기기를 세팅할 때 `.zshrc`뿐 아니라 `/commit`, `/summarize`, `/til`, `/vault` 같은 슬래시 커맨드와 AI 에이전트 스킬까지 한 번에 동기화됩니다.
 
 ---
 
 ## ⚡ 원터치 설치
 
-**슬래시 커맨드 전체를 한 번에 설치** — 이 한 줄이면 끝입니다.
+**슬래시 커맨드 & 에이전트 스킬 전체를 한 번에 설치** — 이 한 줄이면 끝입니다.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Hanzi-Cho/dotfiles/main/install.sh | bash -s -- --commands-only
 ```
 
-`~/.dotfiles`에 저장소를 클론하고 `~/.claude/commands/`로 심볼릭 링크를 걸어줍니다.
+`~/.dotfiles`에 저장소를 클론하고 `~/.claude/commands/` (Claude Code) 및 `~/.gemini/config/skills/` (Antigravity)로 심볼릭 링크를 걸어줍니다.
 이후 `git -C ~/.dotfiles pull`만 하면 커맨드가 자동으로 최신화됩니다.
 
 셸 설정(`bashrc.d`, `zshrc.d`, `bin/`)까지 포함한 **전체 설치**는 이쪽입니다.
@@ -32,8 +30,8 @@ git clone https://github.com/Hanzi-Cho/dotfiles.git ~/.dotfiles && ~/.dotfiles/i
 
 | 옵션 | 동작 |
 |---|---|
-| (없음) | 셸 프래그먼트 + 슬래시 커맨드 전체 설치 |
-| `--commands-only` | 슬래시 커맨드만 설치 (셸 설정 건드리지 않음) |
+| (없음) | 셸 프래그먼트 + 슬래시 커맨드/스킬 전체 설치 |
+| `--commands-only` | 슬래시 커맨드/스킬만 설치 (셸 설정 건드리지 않음) |
 | `--copy` | 심볼릭 링크 대신 복사 (자동 업데이트 안 됨) |
 | `--dry-run` | 무엇을 할지만 출력하고 아무것도 바꾸지 않음 |
 
@@ -44,9 +42,32 @@ git clone https://github.com/Hanzi-Cho/dotfiles.git ~/.dotfiles && ~/.dotfiles/i
 
 ---
 
-## 📦 My Claude Skills
+## 📦 My Agent Skills & Commands
 
-각 커맨드는 독립적입니다. 필요한 것만 골라 한 줄로 설치할 수 있습니다.
+각 커맨드와 스킬은 독립적이며, Claude Code와 Antigravity 양쪽에서 매핑되어 동작합니다.
+
+### /til (신규)
+
+작업/학습 내용을 파악하여 **TIL Daily(STAR) 문서 및 Knowledge 지식 문서에 규격화하여 기록**합니다.
+- 뒤따라오는 텍스트에 대해 임의의 코드 수정/실행을 하지 않고 **학습/작업 기록 대상**으로 격리 처리합니다.
+- 당일 Daily 문서(`daily/YYYY-MM-DD.md`)가 없을 경우 `./star`를 자동 실행하여 템플릿을 생성합니다.
+- 기술 원리(First Principles)는 `knowledge/` 문서로 자동 승격(Append-Only)하고, SSoT 원칙에 따라 Daily에는 상대 링크만 기록합니다.
+
+```bash
+/til [학습/작업한 내용 또는 메모]
+```
+
+### /vault (신규)
+
+프로젝트 아이디어 기획 또는 관심 기술(Tech Radar)을 분류 판별하여 **Idea Vault 저장소에 체계적으로 기록/갱신**합니다.
+- 입력 텍스트의 양상(1: 프로젝트 아이디어, 2: 관심 기술 스택, 3: 복합)을 자동 판별합니다.
+- **중복 엄격 방지**: 기존 문서를 먼저 검색하여 유사 아이디어는 기존 문서를 보강하고 `## 📝 업데이트 로그`에 이력을 누적합니다.
+- 기술 스택은 성숙도별 3-Level Radar(`level-1-wishlist`, `level-2-planned`, `level-3-experienced`)에 등록합니다.
+- 완료 후 `python3 scripts/update_readme.py`를 실행하여 전체 README를 자동 동기화하고 Git 커밋/푸시합니다.
+
+```bash
+/vault [아이디어 기획 메모 또는 써보고 싶은 기술]
+```
 
 ### /new-command
 
@@ -72,12 +93,6 @@ curl -fsSL https://raw.githubusercontent.com/Hanzi-Cho/dotfiles/main/.claude/com
 | `/commit --commit` | 추천한 단위대로 스테이징 + 커밋 |
 | `/commit --push` | 커밋 후 푸시까지 |
 
-기본 동작을 아예 바꾸려면 파일 안 `CONFIG` 블록의 `MODE`를 `suggest` → `commit`
-또는 `push`로 고치면 됩니다. 플래그는 항상 `CONFIG`를 이깁니다.
-
-커밋·푸시 전에는 **아이덴티티(`user.name`/`user.email`/브랜치)와 커밋 목록을 보여주고
-승인을 받는 게이트**를 지납니다. `git add .`, `--amend`, `--force`, 자동 `pull`은 하지 않습니다.
-
 ### /summarize
 
 지금 Claude Code 세션에서 **무슨 작업을 했는지 정리해 학습 기록 저장소에 남기고**,
@@ -86,13 +101,6 @@ curl -fsSL https://raw.githubusercontent.com/Hanzi-Cho/dotfiles/main/.claude/com
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Hanzi-Cho/dotfiles/main/.claude/commands/summarize.md -o ~/.claude/commands/summarize.md
 ```
-
-> ⚠️ 이 커맨드는 **별도의 학습 기록 저장소(TIL 저장소)가 미리 있어야** 동작합니다.
-> 파일 안 `CONFIG` 블록의 `TIL_ROOT`, `GIT_USER_NAME`, `GIT_USER_EMAIL`을 본인 값으로
-> 고치세요. 경로가 없으면 커맨드는 추측하지 않고 그냥 중단합니다.
-> 저장소가 아직 없다면 → [학습 기록 저장소(TIL) 만들기](#-학습-기록-저장소til-만들기)
-
-디렉터리가 없다면 먼저 `mkdir -p ~/.claude/commands`를 실행하세요.
 
 ---
 
@@ -327,8 +335,14 @@ git -C ~/.dotfiles commit -m "feat(commands): /my-command 추가"
 
 ```
 dotfiles/
+├── .agents/
+│   └── skills/              # Antigravity (AGY) 커스텀 스킬
+│       ├── til/SKILL.md     # /til
+│       └── vault/SKILL.md   # /vault
 ├── .claude/
 │   └── commands/            # Claude Code 슬래시 커맨드
+│       ├── til.md           # /til
+│       ├── vault.md         # /vault
 │       ├── new-command.md   # /new-command
 │       ├── commit.md        # /commit
 │       └── summarize.md     # /summarize
@@ -340,8 +354,8 @@ dotfiles/
 ├── bin/
 │   └── adb                  # WSL → Windows adb.exe 프록시
 ├── secrets.example.sh       # 로컬 설정 템플릿 (실제 값은 여기 넣지 않음)
-├── CLAUDE.md                # 이 저장소에서 Claude에게 주는 규칙
-└── install.sh               # 설치 스크립트
+├── CLAUDE.md                # 이 저장소에서 AI에게 주는 규칙
+└── install.sh               # Claude Code & Antigravity 원터치 설치 스크립트
 ```
 
 ---

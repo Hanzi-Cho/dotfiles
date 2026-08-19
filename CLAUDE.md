@@ -1,7 +1,7 @@
 # About this repo
 
 Personal dotfiles for a WSL2 + tmux + React Native / Android workflow, plus the
-Claude Code slash commands in `.claude/commands/`.
+Claude Code slash commands in `.claude/commands/` and Antigravity skills in `.agents/skills/`.
 
 # Ground rules
 
