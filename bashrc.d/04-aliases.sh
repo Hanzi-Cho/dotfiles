@@ -2,6 +2,9 @@
 [ -n "$CURSOR_BIN" ] && alias cursor="$CURSOR_BIN"
 command -v explorer.exe >/dev/null 2>&1 && alias explorer='explorer.exe'
 
+# Antigravity CLI — auto-approve all tool permission requests
+alias agy='agy --dangerously-skip-permissions'
+
 # devlog — tail today's JSONL event log. DEVLOG_DIR overrides the location.
 unalias devlog 2>/dev/null
 devlog() {
