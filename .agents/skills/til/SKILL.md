@@ -1,13 +1,13 @@
 ---
 name: til
 description: >-
-  TIL Daily(STAR) 문서 및 Knowledge 지식 문서를 규격에 맞춰 자동 기록/갱신합니다.
-  입력된 텍스트를 코드 실행/수정이 아닌 사용자가 작업 또는 공부한 내용으로 인식하여 daily 및 knowledge에 정리합니다.
+  TIL Daily(STAR) 문서, Knowledge 지식 문서 및 Career 커리어 문서를 규격에 맞춰 자동 기록/갱신합니다.
+  입력된 텍스트를 코드 실행/수정이 아닌 사용자가 작업 또는 공부한 내용으로 인식하여 daily, knowledge, career에 정리합니다.
 ---
 
 <!-- 권장: Antigravity / Claude Code 공용 TIL 자동 기록 워크플로우 -->
 
-# /til — 학습/작업 내용 → TIL Daily(STAR) & Knowledge 자동 기록
+# /til — 학습/작업 내용 → TIL Daily(STAR), Knowledge & Career 자동 기록
 
 ## 출력 규칙 (fluff: terse)
 - 인사, 장황한 설명, "~해드릴게요" 금지.
@@ -22,11 +22,13 @@ GUIDELINES     = /home/whwog/workspace/hanzicho/til/TIL_GUIDELINES.md
 DAILY_DIR      = /home/whwog/workspace/hanzicho/til/daily
 KNOW_DIR       = /home/whwog/workspace/hanzicho/til/knowledge
 STAR_SCRIPT    = /home/whwog/workspace/hanzicho/til/star
+CAREER_ROOT    = /home/whwog/workspace/hanzicho/career
+CAREER_GUIDE   = /home/whwog/workspace/hanzicho/career/CAREER_GUIDELINES.md
 ```
 
 ---
 
-## 실행 절차 (STEP 0 ~ STEP 5)
+## 실행 절차 (STEP 0 ~ STEP 6)
 
 ### STEP 0 — 부트스트랩 및 날짜 확인
 1. 오늘 날짜를 확인한다 (`date +%F`, 예: `YYYY-MM-DD`).
@@ -74,9 +76,20 @@ STAR_SCRIPT    = /home/whwog/workspace/hanzicho/til/star
    - `* 어떤 기능/실험을 하다가...` 등의 기본 플레이스홀더 문구는 삭제하고 실제 내용으로 교체한다.
    - 이미 작성된 내용이 있으면 기존 번호를 이어서 추가한다.
 
-### STEP 4 — Fact 기반 엄격성 및 미비점 점검
+### STEP 4 — Career (이력서/포트폴리오) 연계 판별 및 업데이트
+1. **Career 반영 대상 판별**:
+   - 입력된 작업/학습 내용 중 커리어 관점에서 유의미한 **트러블슈팅 사례(Why-How-Result)**, **아키텍처 설계/개선(통신 프로토콜, 브랜칭/트리아지 거버넌스 등)**, **정량적 성과**, **신규 담당 업무**가 포함되어 있는지 판별한다.
+2. **직무 트랙 매핑 및 갱신 (`CAREER_GUIDELINES.md` 준수)**:
+   - 해당되는 트랙 디렉토리(`semi/`, `car/`, `platform/`, `web/`)를 식별한다.
+   - 대상 파일(`projects.md`, `skills.md`, `duties.md`)에 하이엔드 엔지니어링 표현 및 정량적 성과(Why-How-Result 구조)로 점진 추가/보완한다.
+3. **Daily TIL 연계 기록**:
+   - Daily 문서(`daily/YYYY-MM-DD.md`) 하단에 `## Career 문서 연계 기록` 표를 추가/갱신하여 어떤 직무 트랙 문서가 어떻게 업데이트되었는지 명시한다.
+
+### STEP 5 — Fact 기반 엄격성 및 미비점 점검
 - 주관적 평가나 과장된 문구(`"최고의 역량"`, `"혁신적"` 등)는 일절 배제한다.
 - 핵심 결과(Result)나 근본 원인(Action)이 너무 모호한 경우에만 사용자에게 1~2개 질문으로 확인 후 보완한다.
 
-### STEP 5 — 완료 보고
-- 작업한 파일 목록(`daily/...`, `knowledge/...`)과 핵심 요약을 간결하게 출력한다.
+### STEP 6 — 완료 보고 및 Git 커밋/푸시 지원
+- 작업한 파일 목록(`daily/...`, `knowledge/...`, `career/...`)과 핵심 요약을 간결하게 출력한다.
+- 요청 시 또는 워크플로우에 따라 `$TIL_ROOT` 및 `$CAREER_ROOT`의 변경사항을 각각 커밋 및 푸시한다.
+
